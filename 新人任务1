@@ -1,0 +1,144 @@
+#define _CRT_SECURE_NO_WARNINGS
+#include <iostream>
+#include <fstream>
+#include <cmath>
+#include <cstring>
+
+const int width = 800;
+const int height = 600;
+
+struct Color {//定义一个Color结构体RGB三元素
+    unsigned char r, g, b;
+};
+
+int chacheng(int a, int b, int c, int d) {
+    return a * d - b * c;
+}
+int inTrigger(int x0, int y0, int x1, int y1, int x2, int y2, int x, int y) {
+    int c0 = x - x0;
+    int d0 = y - y0;
+    int c1 = x - x1;
+    int d1 = y - y1;
+    int c2 = x - x2;
+    int d2 = y - y2;
+    int a0 = x0 - x1;
+    int b0 = y0 - y1;
+    int a1 = x1 - x2;
+    int b1 = y1 - y2;
+    int a2 = x2 - x0;
+    int b2 = y2 - y0;
+    int m0 = chacheng(a0, b0, c0, d0);
+    int m1 = chacheng(a1, b1, c1, d1);
+    int m2 = chacheng(a2, b2, c2, d2);
+    if (m0 < 0 && m1 < 0 && m2 < 0 || m0>0 && m1>0 && m2>0) {
+        return 1;
+    }
+    else
+        return 0;
+}
+void drawLine(int x0, int y0, int x1, int y1, Color color, Color** image) {//画线函数
+    float slope = static_cast<float>(y1 - y0) / static_cast<float>(x1 - x0);//斜率
+    if (std::abs(slope) <= 1) {//斜率绝对值小于等于1时不改变坐标值
+        if (x0 > x1) {
+            std::swap(x0, x1);
+            std::swap(y0, y1);
+        }
+        for (int x = x0; x <= x1; ++x) {//画线
+            int y = y0 + static_cast<int>((x - x0) * slope);
+            image[x][y] = color;//对image的像素坐标上色
+        }
+    }
+    else {
+        if (y0 > y1) {
+            std::swap(x0, x1);//相当于翻转坐标轴
+            std::swap(y0, y1);
+        }
+        slope = 1 / slope;
+        for (int y = y0; y <= y1; ++y) {
+            int x = x0 + static_cast<int>((y - y0) * slope);
+            image[x][y] = color;
+        }
+    }
+}
+void drawtrigger(int x0, int y0, int x1, int y1, int x2, int y2, 
+    Color color0, Color color1, Color color2, Color** image) {
+    for (int y = 0; y < height; ++y) {
+        for (int x = 0; x < width; ++x) {
+            if (inTrigger(x0,y0,x1,y1,x2,y2,x, y)) {
+                image[x][y] = color0;
+            }
+            
+            //drawLine(x0, y0,x1,y1,  color0,  image);
+            //drawLine(x1, y1,x2,y2,  color1,  image);
+            //drawLine(x2, y2,x0,y0 , color2,  image);
+        }
+    }
+}
+/*void saveImage(const std::string& filename, Color** image) {//保存图像
+    std::ofstream file(filename, std::ios::out | std::ios::binary);
+    file << "P6\n";//ppm格式
+    file << width << " " << height << "\n";//
+    file << "255\n";//
+    for (int y = 0; y < height; ++y) {
+        for (int x = 0; x < width; ++x) {
+            file << image[x][y].r << image[x][y].g << image[x][y].b;
+        }
+    }
+    file.close();
+    std::cout << "Image saved to " << filename << std::endl;
+}
+*/
+void saveImage1(const char* filename1, Color** image) {
+    FILE* fp = freopen(filename1, "w+", stdout);
+    std::cout << "P6\n" << width << " " << height << "\n255\n";//声明格式
+    for (int y = 0; y < height; ++y) {
+        for (int x = 0; x < width; ++x) {
+            std::cout << image[x][y].r << image[x][y].g << image[x][y].b;
+        }
+    }
+
+    fclose(fp);
+}
+
+
+//std::cout << "Image saved to " << filename1 << std::endl;
+//这段代码是一个保存图像的函数。函数参数包括一个文件名字符串和一个指向颜色二维数组的指针。
+//函数首先创建一个输出文件流对象，用于将图像数据写入文件。
+// 然后，函数写入文件的头部信息，包括图像格式、图像宽度和高度以及颜色深度。
+// 接下来，函数使用嵌套的循环遍历颜色二维数组，将每个像素的颜色分量写入文件。
+// 最后，函数关闭文件流，并在控制台打印保存成功的消息。
+int main() {
+    // 创建一个空白的图像
+    Color** image = new Color * [width];
+    for (int i = 0; i < width; ++i) {
+        image[i] = new Color[height];//用new运算符分配了一个大小为 height 的 Color 数组，并将其赋值给 image[i]
+        memset(image[i], 0, height * sizeof(Color));//动态分配内存
+    }
+
+    // 绘制一条线段
+    int x0 = 100, y0 = 100;
+    int x1 = 700, y1 = 500;
+    int x2 = 300, y2 = 400;
+    Color Green = { 255, 0, 0 };  // 设置线段颜色为绿色
+    Color Blue = { 0, 255, 0 };
+    Color Red = { 0,0,255 };
+    //drawLine(x0, y0, x1, y1, lineColor, image);
+    drawtrigger(x0, y0, x1, y1, x2, y2, Red, Green, Blue, image);
+    // 保存图像为ppm格式文件
+    //std::string filename = "output2.ppm";
+    //saveImage(filename, image);
+    const char* filename1 = "output1.ppm";
+    const char* filename2 = "output2.ppm";
+    saveImage1(filename2, image);
+    
+
+    //绘制三角形
+    
+    // 释放动态分配的内存
+    for (int i = 0; i < width; ++i) {
+        delete[] image[i];
+    }
+    delete[] image;
+
+    return 0;
+}
